@@ -1,0 +1,21 @@
+FROM golang:1.7.1
+ENV PT_OSC_VERSION 2.2.15-2_all
+COPY . /go/src/github.com/square/shift
+WORKDIR /go/src/github.com/square/shift
+RUN wget https://www.percona.com/downloads/percona-toolkit/2.2.15/deb/percona-toolkit_$PT_OSC_VERSION.deb \
+  && apt-get update \
+  && dpkg -i percona-toolkit_$PT_OSC_VERSION.deb || true \
+  && apt-get install -fy \
+  && apt-get install -y patch \
+  && rm percona-toolkit_$PT_OSC_VERSION.deb \
+  && echo "pwd: $(pwd)" \
+  && echo "ls: $(ls)" \
+  && echo "which: $(which pt-online-schema-change)" \
+  && patch $(which pt-online-schema-change) ptosc-patch/0001-ptosc-square-changes.patch \
+  && apt-get clean \
+  && rm -r /var/lib/apt/lists/*
+
+WORKDIR runner
+RUN go build
+
+CMD [ "./runner", "-logtostderr" ]
